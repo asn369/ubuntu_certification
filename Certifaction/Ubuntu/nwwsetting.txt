@@ -1,0 +1,273 @@
+sudo apt update
+sudo apt dist-upgrade
+sudo apt install vanilla-gnome-desktop
+
+resolvectl status
+sudo systemctl restart systemd-resolved
+sudo apt install ntp
+sudo nano /etc/ntp.conf
+ apt install --reinstall openvswitch-switch
+sudo systemctl restart ovsdb-server
+root@exotic-bear:/home/ubuntu# cat /etc/resolv.conf
+nameserver 127.0.0.53
+options edns0 trust-ad
+search maas
+nameserver 192.168.1.1
+nameserver 8.8.8.8
+
+
+sudo systemctl restart networking
+sudo systemctl restart NetworkManager
+nlookup ntp.ubuntu.com
+dig ntp.ubuntu.com
+sudo ntpdate ntp.ubuntu.com
+vim /etc/systemd/timesyncd.conf
+[Time]
+NTP=ntp.ubuntu.com
+sudo systemctl restart systemd-timesyncd
+
+sudo systemctl restart ntp
+sudo systemctl status ntp
+ntpq -p
+timedatectl
+sudo timedatectl set-timezone Asia/Kolkata
+sudo timedatectl set-local-rtc 1
+sudo timedatectl set-ntp true
+sudo timedatectl set-ntp false ## to disable the ntp
+sudo timedatectl set-time "2024-05-01 12:00:00"
+timedatectl
+####Potential NTP conflicts
+sudo systemctl disable --now systemd-timesyncd
+Removed /etc/systemd/system/sysinit.target.wants/systemd-timesyncd.service.
+Removed /etc/systemd/system/dbus-org.freedesktop.timesync1.service.
+reboot
+cat /etc/netplan/00-installer-config.yaml.bk
+# This is the network config written by 'subiquity'
+network:
+    ethernets:
+        enp193s0f0:
+            addresses:
+            - 192.168.1.227/24
+            gateway4: 192.168.1.1
+            match:
+                macaddress: 7c:c2:55:79:81:1e
+            mtu: 1500
+            nameservers:
+                addresses:
+                - 192.168.1.1
+                - 8.8.8.8
+                search:
+                - maas
+            set-name: enp193s0f0
+        enp193s0f1:
+            addresses:
+            - 192.168.1.228/24
+            match:
+                macaddress: 7c:c2:55:79:81:1f
+            mtu: 1500
+            nameservers:
+                addresses:
+                - 192.168.1.1
+                - 8.8.8.8
+                search:
+                - maas
+            routes:
+            -   table: 1
+                to: 0.0.0.0/0
+                via: 192.168.1.1
+            routing-policy:
+            -   from: 192.168.1.0/24
+                priority: 100
+                table: 1
+            -   from: 192.168.1.0/24
+                table: 254
+                to: 192.168.1.0/24
+            set-name: enp193s0f1
+        usb0:
+            match:
+                macaddress: 00:00:00:00:00:00
+            mtu: 1500
+            optional: true
+            set-name: usb0
+    version: 2
+
+ nslookup ntp.ubuntu.com
+sudo apt-add-repository ppa:maas/3.1
+sudo apt-add-repository ppa:hardware-certification/public
+sudo add-apt-repository ppa:checkbox-dev/stable
+sudo add-apt-repository ppa:firmware-testing-team/ppa-fwts-stable
+sudo apt install maas-cert-server
+apt-cache policy maas | grep Installed
+snap info maas | grep installed
+maniacs-setup
+
+maas status
+ sudo systemctl enable --now rc-local
+apt install maas-lxc-host
+
+Uninstall the snap (sudo snap remove maas)
+Fix the PPA configuration (sudo apt-add-repository ppa:maas/3.1)
+ Re-install MAAS (sudo apt install maas).
+cat /etc/maas-cert-server/config
+sudo vim /etc/maas-cert-server/config
+INTERNAL_NET="eth0 eth1"
+sed -i 's/eth0/enp225s0f0np0/g' /etc/maas-cert-server/config
+sed -i 's/eth1/enp225s0f1np1/g' /etc/maas-cert-server/config
+sudo apt update
+sudo apt install canonical-certification-server
+sudo add-apt-repository universe
+
+
+sudo apt update
+
+/etc/rc.local #configure iperf3 to start automatically by editing a startup script,
+start-iperf3 -a 172.24.124.1 -n 2 #Checkbox defaults to using one instance for                      every 10 Gbps of network throughput being tested
+ssh ubuntu@192.168.1.227
+sudo vim /etc/xdg/canonical-certification.conf
+KVM_IMAGE = /home/ubuntu/focal-server-cloudimg-amd64.img
+LXD_ROOTFS = /home/ubuntu/focal-server-cloudimg-amd64.squashfs
+LXD_TEMPLATE = /home/ubuntu/focal-server-cloudimg-amd64-lxd.tar.xz
+vim /etc/xdg/canonical-certification.conf
+
+sudo /usr/lib/checkbox-provider-base/bin/network.py test -i enp193s0f0 \
+-t iperf --iperf3 --scan-timeout 3600 --fail-threshold 80 \
+--cpu-load-fail-threshold 90 --runtime 900 --num_runs 4 --num-threads 20 \
+--target 192.168.1.1
+start-iperf3 -a 192.168.1.1 -n 8
+iperf3 -sD -B 192.168.1.190   ##launch iperf3 separately on each IP address
+iperf3 -sD -B 192.168.1.191
+iperf3 -sD -B 192.168.1.192
+On the MAAS server
+cat >> /etc/maas-cert-server/iperf.conf computenode ip
+192.168.1.226.192.168.1.199,192.168.1.200,192.168.1.201
+
+apt install fwts-efi-runtime-dkms
+sudo efibootmgr
+BootCurrent: 0000
+Timeout: 0 seconds
+BootOrder: 0000,0001,0002
+Boot0000* ubuntu
+Boot0001* PXE Boot
+Boot0002* HDD Boot
+sudo efibootmgr -o Boot0001,Boot0000,Boot0002   ##Run efibootmgr with the -o option to specify the new boot order, prioritizing the PXE boot entry. Replace "Boot0001" 
+Verify Boot Order:
+Run sudo efibootmgr
+python efi-pxeboot.py
+/usr/lib/checkbox-provider-base/bin/efi-pxeboot.py
+/usr/lib/checkbox-provider-resource/bin/python3 udev_resource.py
+/usr/share/checkbox-provider-base/units/miscellanea
+ sudo checkbox-support-fwts_test -l "$PLAINBOX_SESSION_SHARE"/fwts_olog_results.log -t olog
+
+
+
+
+
+bootctl
+
+
+cat /etc/xdg/canonical-certification.conf
+TEST_TARGET_IPERF = 192.168.1.1 master node ip
+
+cat  /usr/lib/checkbox-provider-base/bin/network_configs.sh ###it show 
+nmcli device show
+apt install NetworkManager
+apt reinstall info
+sudo apt install gdb strace  //for debug installer_debug.gz
+
+egrep -c '(vmx|svm)' /proc/cpuinfo
+sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+sudo adduser $USER libvirt
+sudo adduser $USER libvirt-qemu
+lsmod | grep kvm
+sudo systemctl is-active libvirtd
+sudo apt install virt-manager
+
+sudo apt install tftpd-hpa apt install  pxelinux //pxe boot
+
+http://172.16.15.230:5240/MAAS/r/machines
+echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse
+deb http://ddebs.ubuntu.com $(lsb_release -cs)-proposed main restricted universe multiverse" | \
+sudo tee -a /etc/apt/sources.list.d/ddebs.list
+apt-get install xserver-xorg-core-dbgsym
+apt-get install libc6-dbg
+apt install debian-goodies
+mkdir -p /var/log/installer/
+touch debug
+gzip -9 -c /var/log/installer/debug
+
+fwts -q --stdout-summary -r /fwts_oops_results.log oops
+export PLAINBOX_SESSION_SHARE="/home/ubuntu" # Adjust the path 
+env | grep PLAINBOX_SESSION_SHARE
+/usr/share/checkbox-provider-base/units/miscellanea# vim jobs.pxu
+[ -e "${PLAINBOX_SESSION_SHARE}"/fwts_oops_results.log ] && xz -z "${PLAINBOX_SESSION_SHARE}"/fwts_oops_results.log
+
+ lxd.benchmark init
+lxd.benchmark start
+
+
+
+network:
+    ethernets:
+        enp193s0f0:
+            addresses:
+            - 192.168.1.200/24
+            match:
+                macaddress: 7c:c2:55:79:81:1e
+            mtu: 9000
+            set-name: enp193s0f0
+        enp193s0f1:
+            addresses:
+            - 192.168.1.191/24
+            match:
+                macaddress: 7c:c2:55:79:81:1f
+            mtu: 9000
+            nameservers:
+                addresses:
+                - 192.168.1.1
+                search:
+                - maas
+            routes:
+            -   table: 1
+                to: 0.0.0.0/0
+                via: 192.168.1.1
+            routing-policy:
+            -   from: 192.168.1.0/24
+                priority: 100
+                table: 1
+            -   from: 192.168.1.0/24
+                table: 254
+                to: 192.168.1.0/24
+            set-name: enp193s0f1
+        usb0:
+            match:
+                macaddress: 00:00:00:00:00:00
+            mtu: 1500
+            set-name: usb0
+    version: 2
+
+
+ Do you want to set up this computer to automatically start NAT (Y/n)? y
+Created symlink /etc/systemd/system/multi-user.target.wants/certification-nat.service → /lib/systemd/system/certification-nat.service.
+
+***************************************************************************
+
+ARNING:plainbox.unified:Job com.canonical.certification::miscellanea/sosreport created leftover filesystem artefacts in its working directory
+WARNING:plainbox.unified:Leftover file/directory: 'ipmctl.conf'
+WARNING:plainbox.unified:Please store desired files in $PLAINBOX_SESSION_SHAREand use regular temporary files for everything else
+
+ udevadm info -a -n /dev/sdb | grep -i speed
+
+ lsusb -t
+
+
+How do I list only running processes on Linux?
+ps r
+
+List all processes on this current terminal
+ps T
+
+Display Linux processes without controlling ttys
+ps x
+
+
